@@ -32,6 +32,17 @@ si tu conclus, une **commission**. Il faut 1 ⭐ à une mission pour débloquer 
 | 5 | Le mur du prix | Claire, directrice financière | LinkedIn | Pilote de 7 200 € |
 | 6 | Le Dragon des achats | Marc, acheteur redoutable | LinkedIn | Contrat de 60 000 €/an |
 
+## Jouer sur téléphone (sans installation)
+
+Sellme existe aussi en **page claude.ai** : le jeu tourne dans la page et c'est Claude,
+sur le compte du joueur, qui fait parler les prospects. Pas de serveur ni de clé API.
+
+```bash
+npm run build:artifact   # génère dist/sellme.html, la page à publier
+```
+
+La première fois, claude.ai demande au joueur d'autoriser la page à utiliser Claude.
+
 ## Lancer le jeu
 
 Il faut **Node.js 22 ou plus** et une clé API OpenAI (ou Gemini). Aucune dépendance à installer.
@@ -52,7 +63,10 @@ Le modèle se change avec `LLM_MODEL` (par défaut `gpt-5.4-mini`, rapide et éc
 server.js          Serveur HTTP : fichiers statiques + API (/api/scenarios, /api/turn, /api/debrief)
 src/scenarios.js   Les missions : produit, prospect, besoins cachés, objections…
 src/prompts.js     Les consignes données à l'IA (jeu du prospect et débrief du coach)
-src/llm.js         Appel au modèle (OpenAI ou Gemini)
+src/engine.js      Moteur du jeu : confiance, victoire, notation (commun aux deux versions)
+src/llm.js         Appel au modèle pour le serveur (OpenAI ou Gemini)
+src/claude-backend.js  Version claude.ai : le moteur tourne dans la page, Claude répond
+scripts/           Assemblage de la page claude.ai (build-artifact.mjs)
 public/            L'interface du jeu (HTML, CSS, JavaScript)
 ```
 

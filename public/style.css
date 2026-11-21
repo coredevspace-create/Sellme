@@ -36,6 +36,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 [hidden] { display: none !important; }
+/* Bande sous la barre d'état du téléphone, derrière la barre du haut collante */
+body::before { content: ''; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 11; background: var(--bg); }
 h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5rem; }
 p { margin: 0 0 0.75rem; }
 button { font: inherit; cursor: pointer; color: inherit; }
@@ -76,9 +78,11 @@ kbd {
 
 /* Barre du haut */
 .topbar {
-  position: sticky; top: 0; z-index: 10;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
   display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
-  padding: 0.7rem 1.25rem;
+  padding-block: 0.7rem;
+  padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
   background: linear-gradient(to bottom, rgb(11 10 20 / 0.92), rgb(11 10 20 / 0));
 }
 .topbar-left { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
@@ -112,7 +116,11 @@ kbd {
 .chip.money { color: var(--money); padding-left: 0.4rem; }
 .money-icon { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; background: rgb(62 224 143 / 0.15); font-weight: 800; font-size: 0.75rem; }
 
-main { max-width: 1160px; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
+main {
+  max-width: 1160px; margin: 0 auto; padding-block: 1rem 3rem;
+  padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
+}
 .screen { animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
@@ -355,6 +363,12 @@ main { max-width: 1160px; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
 .sheet-item b { display: block; font-size: 0.88rem; }
 .sheet-item small { display: block; color: var(--muted); font-size: 0.74rem; }
 .sheet-icon { font-size: 1.3rem; }
+.quit-sheet { padding-bottom: 0.6rem; gap: 0.6rem; }
+.quit-sheet p { margin: 0; font-size: 0.9rem; }
+.quit-sheet small { color: var(--muted); }
+.quit-actions { display: flex; gap: 0.5rem; }
+.quit-actions .btn { flex: 1; padding: 0.55rem; }
+.btn.danger { background: var(--bad-soft); border-color: rgb(255 84 112 / 0.4); color: var(--bad); }
 .hints { display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.6rem 0.75rem 0; border-top: 1px solid var(--line); background: rgb(0 0 0 / 0.2); scrollbar-width: thin; }
 .hint { flex-shrink: 0; max-width: 220px; text-align: left; font-size: 0.76rem; background: rgb(255 255 255 / 0.07); border: 1px solid var(--line); border-radius: 12px; padding: 0.45rem 0.6rem; }
 .hint:hover { border-color: var(--accent); }
@@ -444,11 +458,11 @@ blockquote { margin: 0 0 0.75rem; padding: 0.65rem 0.9rem; border-left: 3px soli
   .mode { max-width: none; flex: 1 1 220px; }
 }
 @media (max-width: 560px) {
-  main { padding: 0.5rem 0.75rem 2.5rem; }
-  .topbar { padding: 0.55rem 0.75rem; }
+  main { padding-block: 0.5rem 2.5rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .topbar { padding-block: 0.55rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .level-info .xpbar { width: 56px; }
   .game-tag { display: none; }
-  #game { margin: -0.5rem -0.75rem 0; }
+  #game { margin: -0.5rem calc(-1 * max(16px, env(safe-area-inset-right, 0px))) 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); }
   .phone { height: calc(100dvh - 54px); min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
   .phone-status { display: none; }
   .mini-trust { display: inline-block; }

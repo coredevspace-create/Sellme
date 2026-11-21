@@ -111,6 +111,8 @@ function toast(message) {
 }
 
 async function api(path, body) {
+  // Version publiée sur claude.ai : pas de serveur, le moteur tourne dans la page.
+  if (window.sellmeBackend) return window.sellmeBackend(path, body);
   const res = await fetch(path, {
     method: body ? 'POST' : 'GET',
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
@@ -459,6 +461,7 @@ function renderPains() {
 
 /* Actions du « + » : envoyer l'offre ou afficher des phrases utiles */
 function closeSheets() {
+  $('quitSheet').hidden = true;
   $('sheet').hidden = true;
   $('hints').hidden = true;
   $('plusBtn').classList.remove('open');
@@ -609,8 +612,13 @@ $('quitBtn').addEventListener('click', () => {
     show(game.surprise ? 'home' : 'briefing');
     return;
   }
-  if (!confirm('Quitter la conversation ? Elle sera comptée comme une vente perdue.')) return;
-  endGame('quit');
+  closeSheets();
+  $('quitSheet').hidden = false;
+});
+$('quitCancel').addEventListener('click', () => ($('quitSheet').hidden = true));
+$('quitConfirm').addEventListener('click', () => {
+  $('quitSheet').hidden = true;
+  if (!game.over && !game.busy) endGame('quit');
 });
 
 /* ---------- Débrief ---------- */

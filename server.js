@@ -2,13 +2,11 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SCENARIOS, getScenario, publicScenario } from './src/scenarios.js';
-import { turnMessages, debriefMessages, SKILLS } from './src/prompts.js';
+import { listScenarios, playTurn, makeDebrief } from './src/engine.js';
 import { chatJSON, llmConfig } from './src/llm.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC_DIR = fileURLToPath(new URL('./public/', import.meta.url));
-const MAX_MESSAGE_CHARS = 1200;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -18,8 +16,6 @@ const MIME = {
   '.png': 'image/png',
   '.ico': 'image/x-icon',
 };
-
-const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
 function sendJSON(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -35,93 +31,6 @@ async function readBody(req) {
     chunks.push(chunk);
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
-}
-
-// Nettoie l'historique envoyé par le navigateur.
-function cleanHistory(history, scenario) {
-  if (!Array.isArray(history)) throw new Error('Historique invalide');
-  const max = scenario.maxTurns * 2 + 2;
-  return history.slice(-max).map((m) => {
-    const role = m.role === 'seller' ? 'seller' : 'prospect';
-    if (role === 'seller' && m.kind === 'offer') return { role, kind: 'offer', content: '' };
-    return { role, content: String(m.content ?? '').slice(0, MAX_MESSAGE_CHARS) };
-  });
-}
-
-async function handleTurn(body) {
-  const s = getScenario(body.scenarioId);
-  if (!s) throw new Error('Scénario inconnu');
-  const history = cleanHistory(body.history, s);
-  const last = history.at(-1);
-  if (last?.role !== 'seller' || (last.kind !== 'offer' && !last.content.trim())) {
-    throw new Error('Le dernier message doit venir du vendeur');
-  }
-  const trust = clamp(Number(body.trust) || 0, 0, 100);
-  const turn = clamp(Number(body.turn) || 0, 0, s.maxTurns);
-  const discovered = new Set(Array.isArray(body.discovered) ? body.discovered : []);
-
-  const out = await chatJSON(turnMessages(s, history, trust, turn));
-
-  const offerSent = last.kind === 'offer';
-  const accepted =
-    offerSent && (out.offer_accepted === true || (out.offer_accepted == null && out.status === 'won'));
-  let delta = clamp(Math.round(Number(out.trust_delta) || 0), -15, 15);
-  // Une offre refusée est une offre envoyée trop tôt : ça coûte toujours de la confiance.
-  if (offerSent && !accepted) delta = Math.min(delta, -6);
-  let newTrust = clamp(trust + delta, 0, 100);
-  const nextTurn = turn + 1;
-
-  let status = out.status === 'lost' ? 'lost' : 'ongoing';
-  // La vente n'est conclue que si le prospect accepte l'offre qu'on vient de lui
-  // envoyer. Sa décision fait foi, pour que le résultat colle à sa réponse.
-  if (accepted && status !== 'lost') {
-    status = 'won';
-    newTrust = Math.max(newTrust, s.winTrust);
-  }
-  if (newTrust <= 5) status = 'lost';
-  if (status === 'ongoing' && nextTurn >= s.maxTurns) status = 'timeout';
-
-  const revealed = (Array.isArray(out.revealed) ? out.revealed : [])
-    .map((id) => s.hidden.pains.find((p) => p.id === id))
-    .filter((p) => p && !discovered.has(p.id));
-
-  return {
-    reply: String(out.reply || '…'),
-    coach: String(out.coach || ''),
-    skill: String(out.skill || ''),
-    delta,
-    trust: newTrust,
-    turn: nextTurn,
-    status,
-    revealed,
-  };
-}
-
-async function handleDebrief(body) {
-  const s = getScenario(body.scenarioId);
-  if (!s) throw new Error('Scénario inconnu');
-  const history = cleanHistory(body.history, s);
-  const outcome = body.outcome === 'won' ? 'won' : 'lost';
-  const discovered = (Array.isArray(body.discovered) ? body.discovered : []).filter((id) =>
-    s.hidden.pains.some((p) => p.id === id),
-  );
-
-  const out = await chatJSON(debriefMessages(s, history, outcome, discovered));
-  const global = clamp(Math.round(Number(out.global) || 0), 0, 100);
-  const stars = outcome === 'won' ? (global >= 80 ? 3 : 2) : global >= 50 ? 1 : 0;
-  const scores = Object.fromEntries(
-    SKILLS.map((k) => [k, clamp(Math.round(Number(out.scores?.[k]) || 0), 0, 10)]),
-  );
-
-  return {
-    ...out,
-    scores,
-    global,
-    stars,
-    outcome,
-    commission: outcome === 'won' ? s.offer.commission : 0,
-    pains: s.hidden.pains.map((p) => ({ ...p, found: discovered.includes(p.id) })),
-  };
 }
 
 async function serveStatic(req, res) {
@@ -144,13 +53,13 @@ async function serveStatic(req, res) {
 const server = http.createServer(async (req, res) => {
   try {
     if (req.url === '/api/scenarios' && req.method === 'GET') {
-      return sendJSON(res, 200, SCENARIOS.map(publicScenario));
+      return sendJSON(res, 200, listScenarios());
     }
     if (req.url === '/api/turn' && req.method === 'POST') {
-      return sendJSON(res, 200, await handleTurn(await readBody(req)));
+      return sendJSON(res, 200, await playTurn(await readBody(req), chatJSON));
     }
     if (req.url === '/api/debrief' && req.method === 'POST') {
-      return sendJSON(res, 200, await handleDebrief(await readBody(req)));
+      return sendJSON(res, 200, await makeDebrief(await readBody(req), chatJSON));
     }
     if (req.method === 'GET') return serveStatic(req, res);
     res.writeHead(405).end();
