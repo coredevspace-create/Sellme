@@ -1,6 +1,6 @@
 // Service worker de Sellme : garde une copie des fichiers du jeu pour un démarrage rapide.
 // Les appels aux IA (autres domaines) ne passent jamais par ce cache.
-const CACHE = 'sellme-v1';
+const CACHE = 'sellme-v2';
 const SHELL = [
   './',
   'index.html',
