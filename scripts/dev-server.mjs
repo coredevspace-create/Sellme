@@ -1,4 +1,5 @@
 // Petit serveur local pour développer Sellme : il sert simplement le dossier public/.
+// Il est rangé dans scripts/ pour que Vercel ne le prenne pas pour un serveur à exécuter.
 // Le jeu est un site statique : l'IA est appelée directement depuis le navigateur
 // du joueur, avec sa propre clé (voir public/js/ai.js). En production : Vercel.
 import http from 'node:http';
@@ -7,7 +8,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const PORT = Number(process.env.PORT) || 3000;
-const PUBLIC_DIR = fileURLToPath(new URL('./public/', import.meta.url));
+const PUBLIC_DIR = fileURLToPath(new URL('../public/', import.meta.url));
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

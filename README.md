@@ -75,8 +75,8 @@ public/                 Le site, publié tel quel
   js/claude-backend.js  Version claude.ai (remplace ai.js)
   vendor/anthropic-sdk.js  SDK officiel d'Anthropic pour le navigateur (npm run vendor)
   manifest.webmanifest, sw.js, icons/   Appli installable
-server.js               Petit serveur local de développement
-scripts/                Assemblage de la version claude.ai, préparation du SDK
+scripts/dev-server.mjs  Petit serveur local de développement (npm start)
+scripts/                Aussi : assemblage de la version claude.ai, préparation du SDK
 ```
 
 ### Ajouter une mission

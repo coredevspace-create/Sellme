@@ -8,8 +8,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "start": "node scripts/dev-server.mjs",
+    "dev": "node --watch scripts/dev-server.mjs",
     "vendor": "node scripts/vendor-anthropic.mjs",
     "build:artifact": "node scripts/build-artifact.mjs"
   },
