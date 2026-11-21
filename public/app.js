@@ -366,17 +366,85 @@ function startGame({ surprise, hardcore }) {
 
   $('chat').innerHTML = '';
   $('chat').append(el('div', 'day', `Aujourd’hui · ${s.channel}`));
-  addBubble('in', s.opening);
   renderPains();
   updateGauge(0);
   $('input').value = '';
+  autoResize();
+  renderBrief(s, surprise);
+  show('game');
+
+  // En partie rapide, on découvre d'abord la situation, puis le prospect écrit.
+  // Après une mission, le briefing a déjà été lu : la conversation démarre tout de suite.
+  game.started = false;
+  closeBrief();
+  if (surprise) openBrief(false);
+  else beginConversation();
+}
+
+function renderBrief(s, surprise) {
+  $('brLabel').textContent = surprise
+    ? `⚡ Nouveau message · ${s.channel}`
+    : `Mission ${s.level} · ${s.title} · ${s.channel}`;
+  $('brAvatar').textContent = s.prospect.avatar;
+  $('brName').textContent = s.prospect.name;
+  $('brRole').textContent = `${s.prospect.role} · ${s.prospect.company}`;
+  $('brContext').textContent = s.context;
+  $('brGoal').textContent = surprise
+    ? `Comprends ce que ce prospect veut vraiment, gagne sa confiance, puis envoie « ${s.offer.label} » au bon moment. Tu as ${s.maxTurns} messages.`
+    : s.mission;
+  $('brProduct').textContent = s.product.name;
+  $('brPitch').textContent = s.product.pitch;
+  fillList($('brFeatures'), s.product.features);
+  $('brPrice').textContent = `💶 ${s.product.price}`;
+  const offer = $('brOffer');
+  offer.innerHTML = '';
+  const txt = el('div');
+  txt.append(el('b', '', `Pour conclure : ${s.offer.label}`), el('small', '', `${s.offer.amount} · ta commission : ${euros(s.offer.commission)}`));
+  offer.append(el('span', 'big-icon', OFFER_ICONS[s.offer.kind]), txt);
+}
+
+function openBrief(started) {
+  closeSheets();
+  $('briefGo').textContent = started ? 'Retour à la conversation' : 'Commencer la conversation';
+  $('brief').hidden = false;
+  document.querySelector('.phone').classList.add('briefing');
+  $('brief').querySelector('.brief-scroll').scrollTop = 0;
+}
+
+function closeBrief() {
+  $('brief').hidden = true;
+  document.querySelector('.phone').classList.remove('briefing');
+  scrollChat();
+}
+
+async function beginConversation() {
+  game.started = true;
+  const g = game;
+  $('input').disabled = true;
+  $('sendBtn').disabled = true;
+  $('plusBtn').disabled = true;
+  if (g.surprise) {
+    // Petite mise en scène : le prospect écrit son premier message.
+    setTyping(true);
+    await sleep(1300);
+    if (game !== g) return;
+    setTyping(false);
+  }
+  addBubble('in', current.opening);
   $('input').disabled = false;
   $('sendBtn').disabled = false;
   $('plusBtn').disabled = false;
-  autoResize();
-  show('game');
   $('input').focus();
 }
+
+$('briefGo').addEventListener('click', () => {
+  closeBrief();
+  if (!game.started) beginConversation();
+});
+$('infoBtn').addEventListener('click', () => {
+  if ($('brief').hidden) openBrief(game.started);
+  else if (game.started) closeBrief();
+});
 
 function setStatus(typing) {
   const st = $('dmStatus');

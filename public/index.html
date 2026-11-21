@@ -176,6 +176,35 @@
               <span id="dmStatus" class="dm-status"></span>
             </div>
             <span class="mini-trust" id="miniTrust" title="Confiance"></span>
+            <button class="info-btn" id="infoBtn" type="button" aria-label="Revoir le briefing">i</button>
+          </div>
+
+          <div class="brief" id="brief" hidden>
+            <div class="brief-scroll">
+              <p class="label" id="brLabel"></p>
+              <div class="brief-who">
+                <div class="avatar" id="brAvatar"></div>
+                <div><b id="brName"></b><small id="brRole"></small></div>
+              </div>
+              <div class="brief-block">
+                <h4>📍 La situation</h4>
+                <p id="brContext"></p>
+              </div>
+              <div class="brief-block">
+                <h4>🎯 Ton objectif</h4>
+                <p id="brGoal"></p>
+              </div>
+              <div class="brief-block">
+                <h4>📦 Ce que tu vends</h4>
+                <p><b id="brProduct"></b> · <span id="brPitch"></span></p>
+                <ul id="brFeatures"></ul>
+                <p class="price" id="brPrice"></p>
+              </div>
+              <div class="offer-preview" id="brOffer"></div>
+            </div>
+            <div class="brief-actions">
+              <button class="btn primary wide" id="briefGo" type="button">Commencer la conversation</button>
+            </div>
           </div>
           <div class="chat" id="chat" aria-live="polite"></div>
 
