@@ -1,8 +1,8 @@
 // Assemble Sellme en une seule page HTML, publiable comme artifact sur claude.ai.
 // Usage : npm run build:artifact  ->  dist/sellme.html
 //
-// La page publiée n'a pas de serveur : le moteur (src/engine.js) tourne dans le
-// navigateur et Claude fait parler les prospects via src/claude-backend.js.
+// La page publiée n'a pas de serveur : le moteur (public/js/engine.js) tourne dans le
+// navigateur et Claude fait parler les prospects via public/js/claude-backend.js.
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -22,12 +22,13 @@ function unmodule(code) {
 const html = await read('public/index.html');
 const css = await read('public/style.css');
 const app = await read('public/app.js');
-const engine = ['src/scenarios.js', 'src/prompts.js', 'src/engine.js', 'src/claude-backend.js'];
+const engine = ['public/js/scenarios.js', 'public/js/prompts.js', 'public/js/engine.js', 'public/js/claude-backend.js'];
 const engineCode = (await Promise.all(engine.map(read))).map(unmodule).join('\n');
 
 const body = html
   .slice(html.indexOf('<body>') + '<body>'.length, html.indexOf('</body>'))
-  .replace(/\s*<script type="module" src="app.js"><\/script>/, '');
+  // Pas de « Mon IA » ni d'appli installable sur claude.ai : l'IA y est fournie.
+  .replace(/\s*<script type="module" src="[^"]+"><\/script>/g, '');
 
 // Le cadre de claude.ai fournit doctype, <head>, charset et viewport :
 // la page commence directement par son titre et ses styles.

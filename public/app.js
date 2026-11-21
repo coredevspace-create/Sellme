@@ -102,9 +102,10 @@ document.addEventListener('click', (e) => {
   if (go) show(go.dataset.go);
 });
 
-function toast(message) {
+function toast(message, kind = 'error') {
   const t = $('toast');
   t.textContent = message;
+  t.className = `toast ${kind === 'info' ? 'info' : ''}`;
   t.hidden = false;
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => (t.hidden = true), 5000);
@@ -147,7 +148,7 @@ for (const b of document.querySelectorAll('.menu-item')) b.addEventListener('cli
 // Navigation au clavier, comme dans un menu de jeu.
 document.addEventListener('keydown', (e) => {
   if ($('home').hidden || e.target.closest('input, textarea')) return;
-  const items = [...document.querySelectorAll('.menu-item')];
+  const items = [...document.querySelectorAll('.menu-item')].filter((b) => !b.hidden);
   const i = items.findIndex((b) => b.dataset.panel === activePanel);
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     e.preventDefault();
@@ -186,6 +187,7 @@ function renderHome() {
   $('mCareer').textContent = `niv. ${lvl.index + 1}`;
   $('mHistory').textContent = stats.games || '';
   setMode(progress.mode);
+  renderAI();
   setPanel(activePanel);
 
   // Jouer
@@ -274,6 +276,7 @@ function renderHome() {
 }
 
 $('surpriseBtn').addEventListener('click', () => {
+  if (!aiReady()) return;
   const progress = loadProgress();
   let maxIndex = 0;
   scenarios.forEach((_, i) => {
@@ -321,6 +324,7 @@ function openBriefing(s) {
 }
 
 $('startBtn').addEventListener('click', () => {
+  if (!aiReady()) return;
   const hardcore = document.querySelector('input[name="mode"]:checked').value === 'hardcore';
   const p = loadProgress();
   p.mode = hardcore ? 'hardcore' : 'assist';
@@ -816,10 +820,172 @@ function renderDebrief(d, gain, before, after) {
 $('replayBtn').addEventListener('click', () => openBriefing(current));
 $('nextBtn').addEventListener('click', () => openBriefing(scenarios[scenarios.indexOf(current) + 1]));
 
+/* ---------- Mon IA ---------- */
+// Version web : chaque joueur branche sa propre IA (js/ai.js).
+// Version claude.ai : l'IA est fournie, cet écran n'existe pas.
+const AI = window.sellmeAI || null;
+let aiChoice = null; // fournisseur affiché dans le formulaire
+
+function aiReady() {
+  if (!AI || AI.getConfig()) return true;
+  show('home');
+  setPanel('ai');
+  $('panel-ai').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  toast('Connecte d’abord ton IA pour jouer : choisis-en une ci-dessous.', 'info');
+  return false;
+}
+
+function renderAI() {
+  if (!AI) {
+    $('menuAi').hidden = true;
+    $('aiRow').hidden = true;
+    return;
+  }
+  const cfg = AI.getConfig();
+  const P = AI.PROVIDERS;
+  $('mAi').textContent = cfg ? P[cfg.provider].label : 'à connecter';
+  const rowBtn = $('aiRowBtn');
+  rowBtn.textContent = cfg ? `${P[cfg.provider].label} ✓` : 'Connecter mon IA →';
+  rowBtn.classList.toggle('ok', !!cfg);
+
+  const status = $('aiStatus');
+  status.innerHTML = '';
+  const state = el('div', 'state');
+  const txt = el('div');
+  if (cfg) {
+    txt.append(el('span', '', `Connectée : ${P[cfg.provider].label}`), el('small', '', cfg.model));
+    state.append(el('span', 'status-dot on'), txt);
+    const actions = el('div', 'actions');
+    const test = el('button', 'btn', 'Tester');
+    test.type = 'button';
+    test.onclick = () => runTest(cfg);
+    const off = el('button', 'btn ghost', 'Déconnecter');
+    off.type = 'button';
+    off.onclick = () => {
+      AI.clearConfig();
+      $('pfKey').value = '';
+      setFormMsg('IA déconnectée. La clé a été effacée de cet appareil.', 'ok');
+      renderAI();
+    };
+    actions.append(test, off);
+    status.append(state, actions);
+  } else {
+    txt.append(el('span', '', 'Aucune IA connectée'), el('small', '', 'Choisis une IA ci-dessous pour pouvoir jouer.'));
+    state.append(el('span', 'status-dot'), txt);
+    status.append(state);
+  }
+
+  aiChoice ??= cfg?.provider || 'gemini';
+  const grid = $('providerGrid');
+  grid.innerHTML = '';
+  for (const [id, p] of Object.entries(P)) {
+    const b = el('button', `glass provider ${id === aiChoice ? 'on' : ''}`);
+    b.type = 'button';
+    b.append(el('b', '', p.label), el('small', '', p.company), el('span', `badge ${id === 'gemini' ? 'free' : ''}`, p.badge));
+    b.onclick = () => {
+      aiChoice = id;
+      setFormMsg('');
+      renderAI();
+    };
+    grid.append(b);
+  }
+  renderProviderForm(cfg);
+}
+
+function renderProviderForm(cfg) {
+  const p = AI.PROVIDERS[aiChoice];
+  const mine = cfg?.provider === aiChoice ? cfg : null;
+  $('pfTitle').textContent = `Connecter ${p.label}`;
+  fillList($('pfSteps'), p.steps);
+  $('pfOauth').hidden = !p.oauth;
+  const link = $('pfKeyLink');
+  link.href = p.keyUrl;
+  link.textContent = p.oauth ? 'Ou créer une clé à la main ↗' : `Obtenir ma clé ${p.label} ↗`;
+  $('pfKeyLabel').textContent = `Clé API ${p.label} (${p.keyHint})`;
+  $('pfKey').placeholder = mine ? 'Clé enregistrée : laisse vide pour la garder' : 'Colle ta clé ici';
+  if (!mine) $('pfKey').value = '';
+
+  const select = $('pfModel');
+  select.innerHTML = '';
+  const known = p.models.map(([v]) => v);
+  for (const [value, label] of [...p.models, ['__custom', 'Autre modèle…']]) {
+    const o = el('option', '', label);
+    o.value = value;
+    select.append(o);
+  }
+  const current = mine?.model;
+  select.value = current && !known.includes(current) ? '__custom' : current || known[0];
+  $('pfCustom').value = current && !known.includes(current) ? current : '';
+  $('pfCustomWrap').hidden = select.value !== '__custom';
+}
+
+function setFormMsg(text, kind = '') {
+  const m = $('pfMsg');
+  m.textContent = text;
+  m.className = `form-msg ${kind}`;
+}
+
+async function runTest(cfg) {
+  setFormMsg(`Test de ${AI.PROVIDERS[cfg.provider].label} en cours…`, 'wait');
+  try {
+    await AI.testConfig(cfg);
+    setFormMsg(`✅ ${AI.PROVIDERS[cfg.provider].label} répond. Tu peux jouer !`, 'ok');
+    return true;
+  } catch (e) {
+    setFormMsg(e.message, 'err');
+    return false;
+  }
+}
+
+if (AI) {
+  $('aiRowBtn').addEventListener('click', () => setPanel('ai'));
+  $('pfModel').addEventListener('change', () => ($('pfCustomWrap').hidden = $('pfModel').value !== '__custom'));
+  $('pfOauth').addEventListener('click', async () => {
+    try {
+      await AI.connectOpenRouter();
+    } catch (e) {
+      setFormMsg(e.message, 'err');
+    }
+  });
+  $('pfSave').addEventListener('click', async () => {
+    const existing = AI.getConfig();
+    const key = $('pfKey').value.trim() || (existing?.provider === aiChoice ? existing.key : '');
+    const model = $('pfModel').value === '__custom' ? $('pfCustom').value.trim() : $('pfModel').value;
+    if (!key) return setFormMsg('Colle d’abord ta clé API.', 'err');
+    if (!model) return setFormMsg('Indique le nom du modèle.', 'err');
+    const cfg = { provider: aiChoice, key, model };
+    $('pfSave').disabled = true;
+    const ok = await runTest(cfg);
+    $('pfSave').disabled = false;
+    if (!ok) return;
+    try {
+      AI.saveConfig(cfg);
+    } catch (e) {
+      return setFormMsg(e.message, 'err');
+    }
+    $('pfKey').value = '';
+    renderAI();
+    setFormMsg(`✅ ${AI.PROVIDERS[aiChoice].label} est connecté. Tu peux jouer !`, 'ok');
+  });
+}
+
 /* ---------- Démarrage ---------- */
 api('/api/scenarios')
-  .then((list) => {
+  .then(async (list) => {
     scenarios = list;
     show('home');
+    // Retour de la connexion OpenRouter : l'adresse contient ?code=…
+    if (AI && new URLSearchParams(location.search).has('code')) {
+      setPanel('ai');
+      $('panel-ai').scrollIntoView({ block: 'start' });
+      try {
+        const cfg = await AI.finishOpenRouterLogin();
+        aiChoice = 'openrouter';
+        renderAI();
+        if (cfg) toast('OpenRouter est connecté. Tu peux jouer !', 'info');
+      } catch (e) {
+        toast(e.message);
+      }
+    }
   })
   .catch((err) => toast(`Impossible de charger les missions : ${err.message}`));

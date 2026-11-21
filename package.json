@@ -1,15 +1,20 @@
 {
   "name": "sellme",
   "version": "0.1.0",
-  "description": "Sellme : le jeu pour apprendre à vendre face à des prospects joués par l'IA",
+  "description": "Sellme : le jeu pour apprendre à vendre par messages, avec l'IA de chaque joueur",
   "type": "module",
   "private": true,
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "start": "node --env-file-if-exists=.env server.js",
-    "dev": "node --watch --env-file-if-exists=.env server.js",
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "vendor": "node scripts/vendor-anthropic.mjs",
     "build:artifact": "node scripts/build-artifact.mjs"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "1.6.0",
+    "esbuild": "0.28.2"
   }
 }

@@ -32,49 +32,56 @@ si tu conclus, une **commission**. Il faut 1 ⭐ à une mission pour débloquer 
 | 5 | Le mur du prix | Claire, directrice financière | LinkedIn | Pilote de 7 200 € |
 | 6 | Le Dragon des achats | Marc, acheteur redoutable | LinkedIn | Contrat de 60 000 €/an |
 
-## Jouer sur téléphone (sans installation)
+## Chaque joueur branche son IA
 
-Sellme existe aussi en **page claude.ai** : le jeu tourne dans la page et c'est Claude,
-sur le compte du joueur, qui fait parler les prospects. Pas de serveur ni de clé API.
+Sellme n'a pas d'IA à lui : dans **Mon IA**, chaque joueur connecte la sienne.
 
-```bash
-npm run build:artifact   # génère dist/sellme.html, la page à publier
-```
+| IA | Connexion | Coût pour le joueur |
+|---|---|---|
+| Gemini (Google) | Clé API d'AI Studio | Gratuit pour commencer |
+| ChatGPT (OpenAI) | Clé API de platform.openai.com | Environ 1 centime par partie |
+| Claude (Anthropic) | Clé API de console.anthropic.com | Selon le modèle choisi |
+| OpenRouter (toutes les IA) | Bouton « Se connecter », sans copier de clé | Selon le modèle |
 
-La première fois, claude.ai demande au joueur d'autoriser la page à utiliser Claude.
+Un abonnement ChatGPT Plus ou Claude Pro ne peut pas être utilisé par une autre application :
+il faut une clé API, facturée à part et à l'usage.
+
+La clé reste dans le navigateur du joueur et n'est envoyée qu'au fournisseur choisi.
 
 ## Lancer le jeu
 
-Il faut **Node.js 22 ou plus** et une clé API OpenAI (ou Gemini). Aucune dépendance à installer.
+Il faut **Node.js 22 ou plus**. Aucune clé n'est nécessaire côté serveur.
 
 ```bash
-cp .env.example .env      # puis colle ta clé dans OPENAI_API_KEY
-npm start
+npm start   # puis ouvre http://localhost:3000 et va dans « Mon IA »
 ```
 
-Ouvre ensuite <http://localhost:3000>.
+Pour mettre le jeu en ligne (Vercel) et sur le Play Store : voir **[DEPLOIEMENT.md](DEPLOIEMENT.md)**.
 
-Pour utiliser Gemini : `LLM_PROVIDER=gemini` et `GEMINI_API_KEY=…` dans `.env`.
-Le modèle se change avec `LLM_MODEL` (par défaut `gpt-5.4-mini`, rapide et économique).
+### Version claude.ai
+
+Sellme existe aussi en page claude.ai : Claude y fait parler les prospects sur le compte du
+joueur, sans clé. `npm run build:artifact` génère `dist/sellme.html`, la page à publier.
 
 ## Organisation du code
 
 ```
-server.js          Serveur HTTP : fichiers statiques + API (/api/scenarios, /api/turn, /api/debrief)
-src/scenarios.js   Les missions : produit, prospect, besoins cachés, objections…
-src/prompts.js     Les consignes données à l'IA (jeu du prospect et débrief du coach)
-src/engine.js      Moteur du jeu : confiance, victoire, notation (commun aux deux versions)
-src/llm.js         Appel au modèle pour le serveur (OpenAI ou Gemini)
-src/claude-backend.js  Version claude.ai : le moteur tourne dans la page, Claude répond
-scripts/           Assemblage de la page claude.ai (build-artifact.mjs)
-public/            L'interface du jeu (HTML, CSS, JavaScript)
+public/                 Le site, publié tel quel
+  index.html, style.css, app.js   Interface du jeu
+  js/scenarios.js       Les missions : produit, prospect, besoins cachés, objections…
+  js/prompts.js         Les consignes données à l'IA (prospect et coach)
+  js/engine.js          Moteur : confiance, victoire, notation
+  js/ai.js              « Mon IA » : fournisseurs, clés, connexion OpenRouter
+  js/claude-backend.js  Version claude.ai (remplace ai.js)
+  vendor/anthropic-sdk.js  SDK officiel d'Anthropic pour le navigateur (npm run vendor)
+  manifest.webmanifest, sw.js, icons/   Appli installable
+server.js               Petit serveur local de développement
+scripts/                Assemblage de la version claude.ai, préparation du SDK
 ```
-
-Les informations cachées des prospects restent sur le serveur : le navigateur ne les reçoit pas.
 
 ### Ajouter une mission
 
-Ajoute un objet dans `SCENARIOS` (`src/scenarios.js`) en suivant le modèle des
+Ajoute un objet dans `SCENARIOS` (`public/js/scenarios.js`) en suivant le modèle des
 missions existantes : canal, produit, offre à envoyer (`offer`), prospect, premier
 message, besoins cachés, objections, déclencheurs d'achat et seuil de confiance (`winTrust`).
 

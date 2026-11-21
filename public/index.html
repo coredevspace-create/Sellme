@@ -10,6 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
 </head>
 <body>
   <div class="backdrop" aria-hidden="true">
@@ -47,6 +49,7 @@
           <button class="menu-item" data-panel="career">Carrière <small id="mCareer"></small></button>
           <button class="menu-item" data-panel="history">Historique <small id="mHistory"></small></button>
           <button class="menu-item" data-panel="method">Méthode <small>7 clés</small></button>
+          <button class="menu-item" data-panel="ai" id="menuAi">Mon IA <small id="mAi"></small></button>
         </nav>
         <p class="kbd-hint"><kbd>↑</kbd><kbd>↓</kbd> naviguer · <kbd>Entrée</kbd> valider</p>
       </div>
@@ -60,6 +63,7 @@
             <p class="muted">Qui est-il ? Que veut-il ? Combien peut-il payer ? À toi de le découvrir en discutant, puis d’envoyer ton lien au bon moment.</p>
             <dl class="rows">
               <div><dt>Prospect</dt><dd>Surprise ⚡</dd></div>
+              <div id="aiRow"><dt>IA</dt><dd><button class="link-btn" id="aiRowBtn" type="button"></button></dd></div>
               <div><dt>Mode</dt><dd>
                 <div class="segmented" id="modeSwitch">
                   <button type="button" data-mode="assist">Avec aides</button>
@@ -101,6 +105,35 @@
           <p class="label">Historique</p>
           <ul class="history" id="history"></ul>
           <p class="muted empty" id="historyEmpty">Pas encore de conversation. Lance une partie !</p>
+        </div>
+
+        <!-- Mon IA -->
+        <div class="panel" id="panel-ai" hidden>
+          <div class="glass card-lg">
+            <p class="label">Mon IA</p>
+            <div class="ai-status" id="aiStatus"></div>
+            <p class="muted small-text">🔒 Ta clé reste sur cet appareil. Elle n’est envoyée qu’à l’IA que tu choisis, jamais à Sellme.</p>
+          </div>
+          <div class="provider-grid" id="providerGrid"></div>
+          <div class="glass card-lg provider-form" id="providerForm">
+            <p class="label" id="pfTitle"></p>
+            <ol class="pf-steps" id="pfSteps"></ol>
+            <div class="pf-actions">
+              <button class="btn primary" id="pfOauth" type="button">Se connecter avec OpenRouter</button>
+              <a class="btn" id="pfKeyLink" target="_blank" rel="noopener">Obtenir ma clé ↗</a>
+            </div>
+            <label class="field" for="pfKey"><span id="pfKeyLabel">Clé API</span>
+              <input id="pfKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            </label>
+            <label class="field" for="pfModel"><span>Modèle</span>
+              <select id="pfModel"></select>
+            </label>
+            <label class="field" for="pfCustom" id="pfCustomWrap" hidden><span>Nom exact du modèle</span>
+              <input id="pfCustom" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            </label>
+            <button class="btn primary wide" id="pfSave" type="button">Enregistrer et tester</button>
+            <p class="form-msg" id="pfMsg" role="status"></p>
+          </div>
         </div>
 
         <!-- Méthode -->
@@ -341,6 +374,8 @@
   </main>
 
   <div class="toast" id="toast" hidden></div>
+  <script type="module" src="js/ai.js"></script>
   <script type="module" src="app.js"></script>
+  <script type="module" src="js/pwa.js"></script>
 </body>
 </html>
