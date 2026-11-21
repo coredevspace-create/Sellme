@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sellme · Apprends à vendre</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <button class="brand" data-go="home" aria-label="Accueil">
+      <span class="brand-mark">S</span><span>Sellme</span>
+    </button>
+    <div class="topbar-stars" id="totalStars" title="Étoiles gagnées"></div>
+  </header>
+
+  <main>
+    <!-- ACCUEIL -->
+    <section class="screen" id="home">
+      <div class="hero">
+        <p class="eyebrow">Simulateur de rendez-vous de vente</p>
+        <h1>Apprends à vendre<br /><span class="accent">en vendant.</span></h1>
+        <p class="lead">Face à toi, des prospects joués par l’IA, chacun avec son caractère, ses besoins cachés et ses objections. Pose les bonnes questions, gagne leur confiance et décroche la vente.</p>
+      </div>
+
+      <h2 class="section-title">Tes missions</h2>
+      <div class="levels" id="levels"></div>
+
+      <h2 class="section-title">Les 5 étapes d’une vente réussie</h2>
+      <ol class="steps">
+        <li><b>Créer le lien</b><span>Sois bref, sympathique, montre que tu t’intéresses à lui.</span></li>
+        <li><b>Découvrir</b><span>Pose des questions ouvertes. Le client parle, toi tu écoutes.</span></li>
+        <li><b>Reformuler</b><span>« Si je comprends bien, ce qui vous gêne c’est… »</span></li>
+        <li><b>Argumenter</b><span>Relie chaque fonction à <em>son</em> problème : un bénéfice, pas une fiche technique.</span></li>
+        <li><b>Conclure</b><span>Demande clairement un engagement : un essai, une démo, une signature.</span></li>
+      </ol>
+    </section>
+
+    <!-- BRIEFING -->
+    <section class="screen" id="briefing" hidden>
+      <button class="back" data-go="home">← Missions</button>
+      <div class="briefing-grid">
+        <div class="card prospect-card">
+          <div class="avatar xl" id="bAvatar"></div>
+          <div>
+            <p class="eyebrow" id="bLevel"></p>
+            <h2 id="bName"></h2>
+            <p class="muted" id="bRole"></p>
+            <p class="mood" id="bMood"></p>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🎯 Ta mission</h3>
+          <p id="bMission"></p>
+          <ul class="objectives" id="bObjectives"></ul>
+        </div>
+        <div class="card product-card">
+          <h3>📦 Ce que tu vends : <span id="bProduct"></span></h3>
+          <p id="bPitch"></p>
+          <ul id="bFeatures"></ul>
+          <p class="price" id="bPrice"></p>
+        </div>
+      </div>
+      <div class="briefing-actions">
+        <label class="toggle"><input type="checkbox" id="coachToggle" checked /> <span>Mode coach : un conseil après chaque réplique</span></label>
+        <button class="btn primary big" id="startBtn">Commencer le rendez-vous →</button>
+      </div>
+    </section>
+
+    <!-- PARTIE -->
+    <section class="screen" id="game" hidden>
+      <div class="game-layout">
+        <div class="chat-panel">
+          <div class="chat-header">
+            <div class="avatar" id="gAvatar"></div>
+            <div class="chat-header-text">
+              <b id="gName"></b>
+              <span class="muted" id="gRole"></span>
+            </div>
+            <span class="mini-trust" id="miniTrust" title="Confiance"></span>
+            <button class="btn ghost small" id="quitBtn">Quitter</button>
+          </div>
+          <div class="chat" id="chat" aria-live="polite"></div>
+          <form class="composer" id="composer">
+            <textarea id="input" rows="2" maxlength="1000" placeholder="Ta réplique… (Entrée pour envoyer)" required></textarea>
+            <button class="btn primary" id="sendBtn" type="submit">Envoyer</button>
+          </form>
+        </div>
+
+        <aside class="side-panel">
+          <div class="card">
+            <div class="gauge-head">
+              <h3>Confiance</h3>
+              <span class="gauge-value" id="trustValue">0</span>
+            </div>
+            <div class="gauge" id="gauge">
+              <div class="gauge-fill" id="gaugeFill"></div>
+              <div class="gauge-target" id="gaugeTarget" title="Seuil pour conclure"></div>
+            </div>
+            <p class="muted small-text">Dépasse le repère ▲ puis demande un engagement pour conclure.</p>
+            <div class="turns"><span>Échanges restants</span><b id="turnsLeft"></b></div>
+          </div>
+
+          <div class="card">
+            <h3>🔍 Besoins découverts <span class="pill" id="painCount"></span></h3>
+            <ul class="pains" id="pains"></ul>
+          </div>
+
+          <details class="card cheatsheet">
+            <summary>💡 Antisèche</summary>
+            <ul>
+              <li><b>Question ouverte :</b> « Comment gérez-vous… aujourd’hui ? »</li>
+              <li><b>Implication :</b> « Qu’est-ce que ça vous coûte, concrètement ? »</li>
+              <li><b>Reformulation :</b> « Si je résume, votre priorité c’est… »</li>
+              <li><b>Objection :</b> « Je comprends. Qu’est-ce qui vous fait dire ça ? »</li>
+              <li><b>Closing :</b> « On le teste ensemble lundi ? »</li>
+            </ul>
+          </details>
+        </aside>
+      </div>
+    </section>
+
+    <!-- DÉBRIEF -->
+    <section class="screen" id="debrief" hidden>
+      <div class="loading" id="debriefLoading">
+        <div class="spinner"></div>
+        <p>Ton coach analyse l’entretien…</p>
+      </div>
+      <div id="debriefContent" hidden>
+        <div class="debrief-hero">
+          <p class="eyebrow" id="dOutcome"></p>
+          <div class="stars big" id="dStars"></div>
+          <h1 id="dVerdict"></h1>
+          <p class="lead" id="dSummary"></p>
+          <div class="score-ring"><b id="dGlobal"></b><span>/100</span></div>
+        </div>
+
+        <div class="debrief-grid">
+          <div class="card">
+            <h3>📈 Tes compétences</h3>
+            <div class="bars" id="dBars"></div>
+          </div>
+          <div class="card">
+            <h3>🔍 Besoins du client</h3>
+            <ul class="pains revealed" id="dPains"></ul>
+            <p class="muted" id="dMissed"></p>
+          </div>
+          <div class="card good">
+            <h3>✅ Ta meilleure réplique</h3>
+            <blockquote id="dBestQuote"></blockquote>
+            <p id="dBestWhy"></p>
+          </div>
+          <div class="card bad">
+            <h3>⚠️ À retravailler</h3>
+            <blockquote id="dWorstQuote"></blockquote>
+            <p id="dWorstWhy"></p>
+            <p class="better"><b>Essaie plutôt :</b> <span id="dWorstBetter"></span></p>
+          </div>
+          <div class="card">
+            <h3>🧠 Conseils du coach</h3>
+            <ol id="dTips"></ol>
+          </div>
+          <div class="card technique">
+            <h3>🎓 Technique à retenir : <span id="dTechName"></span></h3>
+            <p id="dTechExplain"></p>
+          </div>
+        </div>
+
+        <div class="debrief-actions">
+          <button class="btn ghost" data-go="home">Missions</button>
+          <button class="btn" id="replayBtn">Rejouer</button>
+          <button class="btn primary" id="nextBtn">Mission suivante →</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" hidden></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

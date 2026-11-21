@@ -1,0 +1,14 @@
+{
+  "name": "sellme",
+  "version": "0.1.0",
+  "description": "Sellme : le jeu pour apprendre à vendre face à des prospects joués par l'IA",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --watch --env-file-if-exists=.env server.js"
+  }
+}
