@@ -1,29 +1,36 @@
 # 🎯 Sellme : apprends à vendre en vendant
 
-Sellme est un simulateur de rendez-vous de vente. Face à toi, des prospects joués
-par l'IA, chacun avec sa personnalité, **des besoins cachés** et ses objections.
-Pose les bonnes questions, gagne leur confiance et décroche la vente.
+Sellme est un simulateur de vente **par messages privés**. Des prospects joués par
+l'IA t'écrivent sur Instagram, WhatsApp ou LinkedIn. Chacun a sa personnalité,
+**des besoins cachés** et ses objections. Gagne leur confiance, envoie ton lien au
+bon moment… et encaisse ta commission.
 
 ## Comment on joue
 
-1. **Choisis une mission** : chaque prospect est plus difficile que le précédent.
-2. **Lis le briefing** : qui est le client, ce que tu vends, ton objectif.
-3. **Mène l'entretien** en écrivant tes répliques comme dans une vraie conversation.
-   - La **jauge de confiance** monte ou descend selon la qualité de tes répliques.
-   - Les **besoins cachés** se débloquent quand tu poses les bonnes questions.
-   - Le **mode coach** t'explique en direct pourquoi la confiance a bougé.
-4. **Conclus** : dépasse le seuil de confiance et demande un engagement clair.
-5. **Débrief** : une note sur 5 compétences, ta meilleure et ta pire réplique,
-   ce que tu aurais pu dire à la place, et une technique de vente à retenir.
+1. **Choisis une mission**, ou lance un **prospect surprise** dont tu ne sais rien.
+2. **Lis le briefing** : qui est le client, ce que tu vends, ce que tu dois lui faire accepter.
+3. **Choisis ton mode** :
+   - 🛟 **Avec aides** : jauge de confiance, conseil du coach après chaque message, phrases utiles ;
+   - 🔥 **Sans filet** : aucune aide, +25 % d'XP.
+4. **Échange par messages** dans une vraie interface de messagerie (« écrit… », « Vu »…).
+   Les besoins cachés se débloquent quand tu poses les bonnes questions.
+5. **Conclus avec le bouton +** : envoie le lien de paiement, d'essai, de démo ou le contrat.
+   Le prospect accepte… ou refuse si c'est trop tôt, et tu perds de la confiance.
+6. **Débrief** : note sur 7 compétences (cadre, découverte, écoute, faire rêver, annonce
+   du prix, objections, closing), meilleur et pire message, ce que tu aurais pu écrire,
+   et une technique à retenir.
 
-Il faut au moins 1 ⭐ à une mission pour débloquer la suivante.
+Chaque partie rapporte de l'**XP** (7 niveaux, de Stagiaire à Légende de la vente) et,
+si tu conclus, une **commission**. Il faut 1 ⭐ à une mission pour débloquer la suivante.
 
-| # | Mission | Prospect | Compétence travaillée |
-|---|---------|----------|-----------------------|
-| 1 | Le premier café | Sophie, fleuriste | Découverte des besoins |
-| 2 | Pas le temps ! | Karim, boulanger méfiant | Capter l'attention, lever la méfiance |
-| 3 | Le mur du prix | Claire, directrice financière | Objection prix, retour sur investissement |
-| 4 | Le Dragon des achats | Marc, acheteur redoutable | Négociation et closing sous pression |
+| # | Mission | Prospect | Canal | Ce qu'il faut obtenir |
+|---|---------|----------|-------|-----------------------|
+| 1 | Le premier client | Sophie, fleuriste | Instagram | Essai gratuit |
+| 2 | Le rêve de l'indépendance | Inès, future e-commerçante | Instagram | Paiement de 497 € |
+| 3 | Pas le temps ! | Karim, boulanger méfiant | WhatsApp | Réservation de démo |
+| 4 | « Je dois réfléchir » | Yanis, coach sportif | Instagram | Paiement de 1 500 € |
+| 5 | Le mur du prix | Claire, directrice financière | LinkedIn | Pilote de 7 200 € |
+| 6 | Le Dragon des achats | Marc, acheteur redoutable | LinkedIn | Contrat de 60 000 €/an |
 
 ## Lancer le jeu
 
@@ -54,12 +61,14 @@ Les informations cachées des prospects restent sur le serveur : le navigateur n
 ### Ajouter une mission
 
 Ajoute un objet dans `SCENARIOS` (`src/scenarios.js`) en suivant le modèle des
-missions existantes : produit, prospect, phrase d'ouverture, besoins cachés,
-objections, déclencheurs d'achat et seuil de confiance (`winTrust`).
+missions existantes : canal, produit, offre à envoyer (`offer`), prospect, premier
+message, besoins cachés, objections, déclencheurs d'achat et seuil de confiance (`winTrust`).
 
 ## Pistes pour la suite
 
-- 🎙️ Mode vocal (s'entraîner à l'oral comme au téléphone)
-- 🏆 Comptes joueurs, classement, historique des parties
+- 📞 Mode appel vocal (s'entraîner à l'oral comme au téléphone)
+- 🏅 Trophées et défis du jour
+- 📚 Mode « Histoire » sans IA, avec des réponses à choisir
+- 🏆 Comptes joueurs et classement
 - 🏭 Packs de missions par secteur (immobilier, SaaS B2B, retail…)
 - 🧑‍🏫 Mode équipe pour les managers commerciaux

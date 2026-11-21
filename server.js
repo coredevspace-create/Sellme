@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SCENARIOS, getScenario, publicScenario } from './src/scenarios.js';
-import { turnMessages, debriefMessages } from './src/prompts.js';
+import { turnMessages, debriefMessages, SKILLS } from './src/prompts.js';
 import { chatJSON, llmConfig } from './src/llm.js';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -41,17 +41,19 @@ async function readBody(req) {
 function cleanHistory(history, scenario) {
   if (!Array.isArray(history)) throw new Error('Historique invalide');
   const max = scenario.maxTurns * 2 + 2;
-  return history.slice(-max).map((m) => ({
-    role: m.role === 'seller' ? 'seller' : 'prospect',
-    content: String(m.content ?? '').slice(0, MAX_MESSAGE_CHARS),
-  }));
+  return history.slice(-max).map((m) => {
+    const role = m.role === 'seller' ? 'seller' : 'prospect';
+    if (role === 'seller' && m.kind === 'offer') return { role, kind: 'offer', content: '' };
+    return { role, content: String(m.content ?? '').slice(0, MAX_MESSAGE_CHARS) };
+  });
 }
 
 async function handleTurn(body) {
   const s = getScenario(body.scenarioId);
   if (!s) throw new Error('Scénario inconnu');
   const history = cleanHistory(body.history, s);
-  if (history.at(-1)?.role !== 'seller' || !history.at(-1).content.trim()) {
+  const last = history.at(-1);
+  if (last?.role !== 'seller' || (last.kind !== 'offer' && !last.content.trim())) {
     throw new Error('Le dernier message doit venir du vendeur');
   }
   const trust = clamp(Number(body.trust) || 0, 0, 100);
@@ -60,12 +62,22 @@ async function handleTurn(body) {
 
   const out = await chatJSON(turnMessages(s, history, trust, turn));
 
-  const delta = clamp(Math.round(Number(out.trust_delta) || 0), -15, 15);
-  const newTrust = clamp(trust + delta, 0, 100);
+  const offerSent = last.kind === 'offer';
+  const accepted =
+    offerSent && (out.offer_accepted === true || (out.offer_accepted == null && out.status === 'won'));
+  let delta = clamp(Math.round(Number(out.trust_delta) || 0), -15, 15);
+  // Une offre refusée est une offre envoyée trop tôt : ça coûte toujours de la confiance.
+  if (offerSent && !accepted) delta = Math.min(delta, -6);
+  let newTrust = clamp(trust + delta, 0, 100);
   const nextTurn = turn + 1;
 
-  let status = ['won', 'lost'].includes(out.status) ? out.status : 'ongoing';
-  if (status === 'won' && newTrust < s.winTrust) status = 'ongoing';
+  let status = out.status === 'lost' ? 'lost' : 'ongoing';
+  // La vente n'est conclue que si le prospect accepte l'offre qu'on vient de lui
+  // envoyer. Sa décision fait foi, pour que le résultat colle à sa réponse.
+  if (accepted && status !== 'lost') {
+    status = 'won';
+    newTrust = Math.max(newTrust, s.winTrust);
+  }
   if (newTrust <= 5) status = 'lost';
   if (status === 'ongoing' && nextTurn >= s.maxTurns) status = 'timeout';
 
@@ -97,12 +109,17 @@ async function handleDebrief(body) {
   const out = await chatJSON(debriefMessages(s, history, outcome, discovered));
   const global = clamp(Math.round(Number(out.global) || 0), 0, 100);
   const stars = outcome === 'won' ? (global >= 80 ? 3 : 2) : global >= 50 ? 1 : 0;
+  const scores = Object.fromEntries(
+    SKILLS.map((k) => [k, clamp(Math.round(Number(out.scores?.[k]) || 0), 0, 10)]),
+  );
 
   return {
     ...out,
+    scores,
     global,
     stars,
     outcome,
+    commission: outcome === 'won' ? s.offer.commission : 0,
     pains: s.hidden.pains.map((p) => ({ ...p, found: discovered.includes(p.id) })),
   };
 }
