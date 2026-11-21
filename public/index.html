@@ -3,105 +3,162 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sellme · Apprends à vendre</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
+  <meta name="theme-color" content="#0b0a14" />
+  <title>Sellme · Le simulateur de vente</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%237c5cff'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='white' font-family='Arial Black'>S</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="backdrop" aria-hidden="true">
+    <div class="glow g1"></div>
+    <div class="glow g2"></div>
+    <div class="glow g3"></div>
+    <div class="grid"></div>
+  </div>
+
   <header class="topbar">
-    <button class="brand" data-go="home" aria-label="Accueil">
-      <span class="brand-mark">S</span><span>Sellme</span>
-    </button>
+    <div class="topbar-left">
+      <button class="brand" data-go="home" aria-label="Menu principal"><span class="brand-mark">S</span></button>
+      <span class="game-tag" id="gameTag" hidden></span>
+    </div>
     <div class="topbar-stats">
       <div class="chip level-chip" title="Ton niveau">
-        <span class="level-num" id="levelNum">1</span>
+        <span class="level-ring" id="levelRing"><span id="levelNum">1</span></span>
         <span class="level-info"><b id="levelName">Stagiaire</b><span class="xpbar"><span id="xpFill"></span></span></span>
       </div>
-      <div class="chip" title="Commissions gagnées">💰 <b id="wallet">0 €</b></div>
-      <div class="chip hide-sm" title="Étoiles">⭐ <b id="totalStars">0</b></div>
+      <div class="chip money" title="Commissions gagnées"><span class="money-icon">€</span><b id="wallet">0 €</b></div>
     </div>
   </header>
 
   <main>
-    <!-- ACCUEIL -->
-    <section class="screen" id="home">
-      <div class="home-top">
-        <div class="hero">
-          <p class="eyebrow">Simulateur de vente par messages</p>
-          <h1>Apprends à vendre<br /><span class="accent">en vendant.</span></h1>
-          <p class="lead">Des prospects t’écrivent sur Instagram, WhatsApp ou LinkedIn. Chacun a son caractère, ses besoins cachés et ses objections. Gagne leur confiance, envoie ton lien au bon moment… et encaisse ta commission.</p>
+    <!-- MENU PRINCIPAL -->
+    <section class="screen home" id="home">
+      <div class="menu-col">
+        <div class="logo">
+          <h1 class="logo-title">SELL<span>ME</span></h1>
+          <p class="logo-sub">Le simulateur de vente par messages</p>
         </div>
-        <div class="card surprise">
-          <p class="eyebrow">⚡ Prospect surprise</p>
-          <h2>Nouveau message !</h2>
-          <p class="muted">Un prospect vient de t’écrire. Tu ne sais rien de lui : découvre qui il est, ce qu’il veut, et conclus.</p>
-          <button class="btn primary big" id="surpriseBtn">Ouvrir la conversation</button>
-        </div>
+        <nav class="menu" id="menu" aria-label="Menu principal">
+          <button class="menu-item active" data-panel="play">Jouer</button>
+          <button class="menu-item" data-panel="missions">Missions <small id="mMissions"></small></button>
+          <button class="menu-item" data-panel="career">Carrière <small id="mCareer"></small></button>
+          <button class="menu-item" data-panel="history">Historique <small id="mHistory"></small></button>
+          <button class="menu-item" data-panel="method">Méthode <small>7 clés</small></button>
+        </nav>
+        <p class="kbd-hint"><kbd>↑</kbd><kbd>↓</kbd> naviguer · <kbd>Entrée</kbd> valider</p>
       </div>
 
-      <h2 class="section-title">Tes missions</h2>
-      <div class="levels" id="levels"></div>
+      <div class="panel-col">
+        <!-- Jouer -->
+        <div class="panel" id="panel-play">
+          <div class="glass card-lg">
+            <p class="label"><span class="dot"></span> Partie rapide</p>
+            <h2 class="panel-title">Un prospect vient de t’écrire.</h2>
+            <p class="muted">Qui est-il ? Que veut-il ? Combien peut-il payer ? À toi de le découvrir en discutant, puis d’envoyer ton lien au bon moment.</p>
+            <dl class="rows">
+              <div><dt>Prospect</dt><dd>Surprise ⚡</dd></div>
+              <div><dt>Mode</dt><dd>
+                <div class="segmented" id="modeSwitch">
+                  <button type="button" data-mode="assist">Avec aides</button>
+                  <button type="button" data-mode="hardcore">Sans filet <em>XP ×1,25</em></button>
+                </div>
+              </dd></div>
+              <div><dt>Dernière partie</dt><dd id="lastGame">Aucune</dd></div>
+            </dl>
+            <button class="btn primary big wide" id="surpriseBtn">Ouvrir la conversation <kbd>Entrée</kbd></button>
+          </div>
+          <button class="glass next-mission" id="nextMissionCard"></button>
+        </div>
 
-      <div id="historyBlock" hidden>
-        <h2 class="section-title">Tes dernières conversations</h2>
-        <ul class="history" id="history"></ul>
+        <!-- Missions -->
+        <div class="panel" id="panel-missions" hidden>
+          <p class="label">Missions</p>
+          <div class="mission-list" id="levels"></div>
+        </div>
+
+        <!-- Carrière -->
+        <div class="panel" id="panel-career" hidden>
+          <div class="glass card-lg">
+            <p class="label">Carrière</p>
+            <div class="career-head">
+              <div class="big-ring" id="careerRing"><b id="careerLevelNum">1</b></div>
+              <div>
+                <h2 class="panel-title" id="careerLevelName">Stagiaire</h2>
+                <p class="muted" id="careerXp"></p>
+              </div>
+            </div>
+            <div class="xpbar big"><span id="careerXpFill"></span></div>
+            <div class="stats" id="careerStats"></div>
+          </div>
+          <div class="glass ladder" id="ladder"></div>
+        </div>
+
+        <!-- Historique -->
+        <div class="panel" id="panel-history" hidden>
+          <p class="label">Historique</p>
+          <ul class="history" id="history"></ul>
+          <p class="muted empty" id="historyEmpty">Pas encore de conversation. Lance une partie !</p>
+        </div>
+
+        <!-- Méthode -->
+        <div class="panel" id="panel-method" hidden>
+          <p class="label">Les 7 clés d’une vente par message</p>
+          <ol class="keys">
+            <li><b>Le cadre</b><span>Prends la main : « Je te pose 2-3 questions pour voir si je peux t’aider ? »</span></li>
+            <li><b>La découverte</b><span>Questions ouvertes. Le client parle, toi tu écoutes.</span></li>
+            <li><b>L’écoute</b><span>Reformule avec ses mots : « Si je résume, ce qui te bloque c’est… »</span></li>
+            <li><b>Faire rêver</b><span>« Imagine dans 6 mois, quand c’est réglé : ça change quoi pour toi ? »</span></li>
+            <li><b>Le prix</b><span>Annonce-le avec assurance, une fois la valeur claire. Sans t’excuser.</span></li>
+            <li><b>Les objections</b><span>« Je comprends. Qu’est-ce qui te fait hésiter exactement ? »</span></li>
+            <li><b>Le closing</b><span>Envoie le lien au bon moment : ni trop tôt, ni jamais.</span></li>
+          </ol>
+        </div>
       </div>
-
-      <h2 class="section-title">Les 7 clés d’une vente par message</h2>
-      <ol class="steps">
-        <li><b>Le cadre</b><span>Prends la main : « Je te pose 2-3 questions pour voir si je peux t’aider ? »</span></li>
-        <li><b>La découverte</b><span>Questions ouvertes. Le client parle, toi tu écoutes.</span></li>
-        <li><b>L’écoute</b><span>Reformule avec ses mots : « Si je résume, ce qui te bloque c’est… »</span></li>
-        <li><b>Faire rêver</b><span>« Imagine dans 6 mois, quand c’est réglé : ça change quoi pour toi ? »</span></li>
-        <li><b>Le prix</b><span>Annonce-le avec assurance, une fois que la valeur est claire. Sans t’excuser.</span></li>
-        <li><b>Les objections</b><span>« Je comprends. Qu’est-ce qui te fait hésiter exactement ? »</span></li>
-        <li><b>Le closing</b><span>Envoie le lien au bon moment, ni trop tôt ni jamais.</span></li>
-      </ol>
     </section>
 
     <!-- BRIEFING -->
     <section class="screen" id="briefing" hidden>
-      <button class="back" data-go="home">← Missions</button>
+      <button class="back" data-go="home">← Menu</button>
       <div class="briefing-grid">
-        <div class="card prospect-card">
+        <div class="glass prospect-card">
           <div class="avatar xl" id="bAvatar"></div>
           <div>
-            <p class="eyebrow" id="bLevel"></p>
-            <h2 id="bName"></h2>
+            <p class="label" id="bLevel"></p>
+            <h2 class="panel-title" id="bName"></h2>
             <p class="muted" id="bRole"></p>
             <p class="mood" id="bMood"></p>
           </div>
         </div>
-        <div class="card">
-          <h3>🎯 Ta mission</h3>
+        <div class="glass">
+          <p class="label">🎯 Ta mission</p>
           <p id="bContext" class="muted"></p>
           <p id="bMission"></p>
           <ul class="objectives" id="bObjectives"></ul>
         </div>
-        <div class="card product-card">
-          <h3>📦 Ce que tu vends : <span id="bProduct"></span></h3>
-          <p id="bPitch"></p>
+        <div class="glass product-card">
+          <p class="label">📦 Ce que tu vends</p>
+          <h3 id="bProduct"></h3>
+          <p id="bPitch" class="muted"></p>
           <ul id="bFeatures"></ul>
           <p class="price" id="bPrice"></p>
           <div class="offer-preview" id="bOffer"></div>
         </div>
       </div>
 
-      <h3 class="mode-title">Choisis ton mode</h3>
-      <div class="modes">
-        <label class="mode">
-          <input type="radio" name="mode" value="assist" checked />
-          <span><b>🛟 Avec aides</b><small>Jauge de confiance, conseils du coach après chaque message et phrases utiles.</small></span>
-        </label>
-        <label class="mode">
-          <input type="radio" name="mode" value="hardcore" />
-          <span><b>🔥 Sans filet <em class="bonus">+25 % XP</em></b><small>Aucune aide : tu vends à l’instinct, comme en vrai.</small></span>
-        </label>
-      </div>
       <div class="briefing-actions">
+        <div class="modes">
+          <label class="mode">
+            <input type="radio" name="mode" value="assist" checked />
+            <span><b>🛟 Avec aides</b><small>Jauge de confiance, conseils du coach, phrases utiles.</small></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="mode" value="hardcore" />
+            <span><b>🔥 Sans filet <em class="bonus">XP ×1,25</em></b><small>Aucune aide : tu vends à l’instinct.</small></span>
+          </label>
+        </div>
         <button class="btn primary big" id="startBtn">Ouvrir la conversation →</button>
       </div>
     </section>
@@ -110,7 +167,7 @@
     <section class="screen" id="game" hidden>
       <div class="game-layout">
         <div class="phone">
-          <div class="phone-status"><span id="clock">9:41</span><span>📶 🔋</span></div>
+          <div class="phone-status"><span id="clock"></span><span class="island"></span><span>●●● ▮</span></div>
           <div class="dm-header">
             <button class="dm-back" id="quitBtn" aria-label="Quitter la conversation">‹</button>
             <div class="avatar sm" id="gAvatar"></div>
@@ -142,29 +199,29 @@
         </div>
 
         <aside class="side-panel">
-          <div class="card">
-            <p class="eyebrow" id="sChannel"></p>
+          <div class="glass">
+            <p class="label" id="sChannel"></p>
             <p id="sContext"></p>
             <p class="muted small-text" id="sMission"></p>
           </div>
-          <div class="card assist-only">
+          <div class="glass assist-only">
             <div class="gauge-head">
-              <h3>Confiance</h3>
+              <p class="label">Confiance</p>
               <span class="gauge-value" id="trustValue">0</span>
             </div>
             <div class="gauge" id="gauge">
               <div class="gauge-fill" id="gaugeFill"></div>
               <div class="gauge-target" id="gaugeTarget" title="Seuil pour conclure"></div>
             </div>
-            <p class="muted small-text">Dépasse le repère ▲ avant d’envoyer ton lien (bouton +).</p>
+            <p class="muted small-text">Dépasse le repère avant d’envoyer ton lien (bouton +).</p>
           </div>
-          <div class="card">
+          <div class="glass">
             <div class="turns"><span>Messages restants</span><b id="turnsLeft"></b></div>
-            <h3 class="pains-title">🔍 Besoins découverts <span class="pill" id="painCount"></span></h3>
+            <p class="label">🔍 Besoins découverts <span class="pill" id="painCount"></span></p>
             <ul class="pains" id="pains"></ul>
           </div>
-          <div class="card hardcore-only">
-            <p><b>🔥 Mode sans filet</b></p>
+          <div class="glass hardcore-only">
+            <p class="label">🔥 Sans filet</p>
             <p class="muted small-text">Pas de jauge, pas de coach, pas de phrases. Fie-toi aux réactions du prospect.</p>
           </div>
         </aside>
@@ -178,21 +235,29 @@
         <p>Ton coach relit la conversation…</p>
       </div>
       <div id="debriefContent" hidden>
-        <div class="debrief-hero">
-          <p class="eyebrow" id="dOutcome"></p>
-          <div class="stars big" id="dStars"></div>
-          <h1 id="dVerdict"></h1>
-          <p class="lead" id="dSummary"></p>
-        </div>
-
         <div class="debrief-grid">
-          <div class="card score-card">
-            <h3>📈 Note du coach</h3>
-            <div class="score-ring"><b id="dGlobal"></b><span>/100</span></div>
+          <div class="glass score-card">
+            <p class="label">Note du coach</p>
+            <div class="score-head">
+              <div class="score-ring">
+                <svg viewBox="0 0 120 120" aria-hidden="true">
+                  <circle cx="60" cy="60" r="52" class="ring-bg" />
+                  <circle cx="60" cy="60" r="52" class="ring-fg" id="dRing" />
+                </svg>
+                <div class="score-num"><b id="dGlobal"></b><small>sur 100</small></div>
+              </div>
+              <div>
+                <p class="outcome" id="dOutcome"></p>
+                <h2 class="verdict" id="dVerdict"></h2>
+                <div class="stars" id="dStars"></div>
+              </div>
+            </div>
+            <p class="muted" id="dSummary"></p>
             <div class="bars" id="dBars"></div>
           </div>
-          <div class="card reward-card">
-            <h3>🏆 Progression</h3>
+
+          <div class="glass reward-card">
+            <p class="label">Progression</p>
             <p class="xp-gain" id="dXp"></p>
             <ul class="xp-lines" id="dXpLines"></ul>
             <p class="commission" id="dCommission"></p>
@@ -202,36 +267,38 @@
               <small class="muted" id="dNext"></small>
             </div>
           </div>
-          <div class="card good">
-            <h3>✅ Ton meilleur message</h3>
+
+          <div class="glass good">
+            <p class="label">Ton meilleur moment</p>
             <blockquote id="dBestQuote"></blockquote>
             <p id="dBestWhy"></p>
           </div>
-          <div class="card bad">
-            <h3>⚠️ À retravailler</h3>
+          <div class="glass bad">
+            <p class="label">À travailler au prochain message</p>
             <blockquote id="dWorstQuote"></blockquote>
             <p id="dWorstWhy"></p>
             <p class="better"><b>Essaie plutôt :</b> <span id="dWorstBetter"></span></p>
           </div>
-          <div class="card">
-            <h3>🔍 Ce que le prospect cachait</h3>
+          <div class="glass">
+            <p class="label">Ce que le prospect cachait</p>
             <ul class="pains revealed" id="dPains"></ul>
-            <p class="muted" id="dMissed"></p>
+            <p class="muted small-text" id="dMissed"></p>
           </div>
-          <div class="card">
-            <h3>🧠 Conseils du coach</h3>
-            <ol id="dTips"></ol>
+          <div class="glass">
+            <p class="label">Conseils du coach</p>
+            <ol class="tips" id="dTips"></ol>
           </div>
-          <div class="card technique wide">
-            <h3>🎓 Technique à retenir : <span id="dTechName"></span></h3>
+          <div class="glass technique wide">
+            <p class="label">🎓 Technique à retenir</p>
+            <h3 id="dTechName"></h3>
             <p id="dTechExplain"></p>
           </div>
         </div>
 
         <div class="debrief-actions">
-          <button class="btn ghost" data-go="home">Accueil</button>
-          <button class="btn" id="replayBtn">Rejouer</button>
-          <button class="btn primary" id="nextBtn">Mission suivante →</button>
+          <button class="btn primary" id="replayBtn">↻ Rejouer</button>
+          <button class="btn" id="nextBtn">Mission suivante →</button>
+          <button class="btn ghost" data-go="home">⌂ Menu</button>
         </div>
       </div>
     </section>

@@ -84,9 +84,9 @@ function renderTopbar() {
   const lvl = levelFor(p.xp);
   $('levelNum').textContent = lvl.index + 1;
   $('levelName').textContent = lvl.name;
+  $('levelRing').style.setProperty('--p', Math.round(lvl.ratio * 100));
   $('xpFill').style.width = `${Math.round(lvl.ratio * 100)}%`;
   $('wallet').textContent = euros(p.wallet);
-  $('totalStars').textContent = Object.values(p.missions).reduce((n, m) => n + m.stars, 0);
 }
 
 /* ---------- Navigation ---------- */
@@ -94,6 +94,7 @@ function show(screen) {
   for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== screen;
   window.scrollTo({ top: 0 });
   if (screen === 'home') renderHome();
+  if (screen !== 'game') $('gameTag').hidden = true;
   renderTopbar();
 }
 document.addEventListener('click', (e) => {
@@ -131,47 +132,141 @@ function el(tag, className, text) {
   return node;
 }
 
-/* ---------- Accueil ---------- */
+/* ---------- Menu principal ---------- */
+let activePanel = 'play';
+
+function setPanel(name) {
+  activePanel = name;
+  for (const b of document.querySelectorAll('.menu-item')) b.classList.toggle('active', b.dataset.panel === name);
+  for (const p of document.querySelectorAll('.panel')) p.hidden = p.id !== `panel-${name}`;
+}
+for (const b of document.querySelectorAll('.menu-item')) b.addEventListener('click', () => setPanel(b.dataset.panel));
+
+// Navigation au clavier, comme dans un menu de jeu.
+document.addEventListener('keydown', (e) => {
+  if ($('home').hidden || e.target.closest('input, textarea')) return;
+  const items = [...document.querySelectorAll('.menu-item')];
+  const i = items.findIndex((b) => b.dataset.panel === activePanel);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const next = items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length];
+    setPanel(next.dataset.panel);
+    next.focus();
+  } else if (e.key === 'Enter' && activePanel === 'play' && !e.target.closest('button:not(.menu-item)')) {
+    e.preventDefault();
+    $('surpriseBtn').click();
+  }
+});
+
+function setMode(mode) {
+  const p = loadProgress();
+  p.mode = mode;
+  saveProgress(p);
+  for (const b of document.querySelectorAll('#modeSwitch button')) b.classList.toggle('on', b.dataset.mode === mode);
+}
+for (const b of document.querySelectorAll('#modeSwitch button')) b.addEventListener('click', () => setMode(b.dataset.mode));
+
+function careerStats(p) {
+  const games = p.history.length;
+  const wins = p.history.filter((h) => h.outcome === 'won').length;
+  const best = p.history.reduce((m, h) => Math.max(m, h.global), 0);
+  return { games, wins, rate: games ? Math.round((wins / games) * 100) : 0, best };
+}
+
 function renderHome() {
   const progress = loadProgress();
+  const lvl = levelFor(progress.xp);
+  const stats = careerStats(progress);
+  const unlockedCount = scenarios.filter((_, i) => isUnlocked(i, progress)).length;
+
+  // Compteurs du menu
+  $('mMissions').textContent = `${unlockedCount}/${scenarios.length}`;
+  $('mCareer').textContent = `niv. ${lvl.index + 1}`;
+  $('mHistory').textContent = stats.games || '';
+  setMode(progress.mode);
+  setPanel(activePanel);
+
+  // Jouer
+  const last = progress.history[0];
+  $('lastGame').textContent = last
+    ? `${last.outcome === 'won' ? 'Vente' : 'Sans vente'} · ${last.global}/100${last.outcome === 'won' ? ` · +${euros(last.commission)}` : ''}`
+    : 'Aucune';
+  const nextIndex = scenarios.findIndex((s, i) => isUnlocked(i, progress) && !(progress.missions[s.id]?.stars >= 1));
+  const target = scenarios[nextIndex === -1 ? scenarios.length - 1 : nextIndex];
+  const nm = $('nextMissionCard');
+  nm.innerHTML = '';
+  const text = el('span', 'nm-text');
+  text.append(
+    el('small', '', nextIndex === -1 ? 'Toutes les missions sont débloquées' : `Mission ${target.level} · ${target.difficulty}`),
+    el('b', '', target.title),
+    el('small', '', `${target.prospect.name} · ${target.channel}`),
+  );
+  nm.append(el('span', 'avatar', target.prospect.avatar), text, el('span', 'arrow', '→'));
+  nm.onclick = () => openBriefing(target);
+
+  // Missions
   const list = $('levels');
   list.innerHTML = '';
   scenarios.forEach((s, i) => {
     const unlocked = isUnlocked(i, progress);
     const m = progress.missions[s.id];
-    const card = el('button', 'level');
-    card.disabled = !unlocked;
-    card.innerHTML = `
-      <div class="level-top">
-        <div class="avatar">${s.prospect.avatar}</div>
-        <span class="channel">${unlocked ? s.channel : '🔒'}</span>
-      </div>
-      <p class="eyebrow">Mission ${s.level}</p>
-      <h3></h3>
-      <p class="muted"></p>
-      <div class="meta">
-        <span class="tag ${s.difficulty}">${s.difficulty}</span>
-        <span class="stars">${starsHTML(m?.stars || 0)}</span>
-      </div>`;
-    card.querySelector('h3').textContent = s.title;
-    card.querySelector('.muted').textContent = unlocked
-      ? `${s.prospect.name} · ${s.skillFocus}`
-      : 'Gagne au moins 1 étoile à la mission précédente';
-    card.addEventListener('click', () => openBriefing(s));
-    list.append(card);
+    const row = el('button', 'glass mission');
+    row.disabled = !unlocked;
+    const mid = el('span');
+    mid.append(
+      el('span', 'm-title', `${s.level}. ${s.title}`),
+      el('span', 'm-sub', unlocked ? `${s.prospect.name} · ${s.channel} · ${s.skillFocus}` : '🔒 Gagne 1 étoile à la mission précédente'),
+    );
+    const right = el('span', 'm-right');
+    right.append(el('span', `tag ${s.difficulty}`, s.difficulty));
+    const stars = el('span', 'stars');
+    stars.innerHTML = starsHTML(m?.stars || 0);
+    right.append(stars);
+    row.append(el('span', 'avatar', s.prospect.avatar), mid, right);
+    row.addEventListener('click', () => openBriefing(s));
+    list.append(row);
   });
 
-  $('historyBlock').hidden = progress.history.length === 0;
+  // Carrière
+  $('careerRing').style.setProperty('--p', Math.round(lvl.ratio * 100));
+  $('careerLevelNum').textContent = lvl.index + 1;
+  $('careerLevelName').textContent = lvl.name;
+  $('careerXp').textContent = lvl.next
+    ? `${progress.xp} XP · encore ${lvl.next.min - progress.xp} XP avant « ${lvl.next.name} »`
+    : `${progress.xp} XP · niveau maximum 👑`;
+  $('careerXpFill').style.width = `${Math.round(lvl.ratio * 100)}%`;
+  const statBox = $('careerStats');
+  statBox.innerHTML = '';
+  for (const [value, label, cls] of [
+    [euros(progress.wallet), 'Commissions encaissées', 'money'],
+    [stats.games, 'Conversations'],
+    [`${stats.rate} %`, 'Taux de closing'],
+    [stats.best ? `${stats.best}/100` : '—', 'Meilleure note'],
+  ]) {
+    const d = el('div', `stat ${cls || ''}`);
+    d.append(el('b', '', String(value)), el('small', '', label));
+    statBox.append(d);
+  }
+  const ladder = $('ladder');
+  ladder.innerHTML = '';
+  LEVELS.forEach((l, i) => {
+    const r = el('div', `rung ${i < lvl.index ? 'done' : i === lvl.index ? 'current' : ''}`);
+    r.append(el('span', '', `${i < lvl.index ? '✓' : i === lvl.index ? '▶' : '·'} ${i + 1}. ${l.name}`), el('span', '', `${l.min} XP`));
+    ladder.append(r);
+  });
+
+  // Historique
   const hist = $('history');
   hist.innerHTML = '';
-  for (const h of progress.history.slice(0, 5)) {
+  $('historyEmpty').hidden = progress.history.length > 0;
+  for (const h of progress.history.slice(0, 20)) {
     const li = el('li');
-    li.append(
-      el('span', '', h.avatar),
-      el('span', '', `${h.prospect} · ${h.title}${h.hardcore ? ' 🔥' : ''}`),
-      el('span', 'muted', `${h.global}/100`),
-      el('span', `h-result ${h.outcome}`, h.outcome === 'won' ? `+${euros(h.commission)}` : 'Perdue'),
-    );
+    const main = el('span', 'h-main');
+    const date = new Date(h.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    main.append(el('b', '', `${h.prospect}${h.hardcore ? ' 🔥' : ''}`), el('small', '', `${h.title} · ${date}`));
+    const res = el('span', `h-result ${h.outcome}`, h.outcome === 'won' ? `+${euros(h.commission)}` : 'Perdue');
+    res.append(el('small', '', `${h.global}/100`));
+    li.append(el('span', 'avatar', h.avatar), main, res);
     hist.append(li);
   }
 }
@@ -246,6 +341,12 @@ function startGame({ surprise, hardcore }) {
     over: false,
   };
   document.body.classList.toggle('hardcore', hardcore);
+  const tag = $('gameTag');
+  tag.innerHTML = '';
+  tag.append(el('span', 'dot'), el('b', '', surprise ? 'Partie rapide' : `Mission ${s.level} · ${s.title}`));
+  if (hardcore) tag.append(el('span', 'tag-hard', 'Sans filet · XP ×1,25'));
+  tag.hidden = false;
+  $('clock').textContent = nowTime();
 
   $('gAvatar').textContent = s.prospect.avatar;
   $('gName').textContent = s.prospect.name;
@@ -563,7 +664,7 @@ async function runDebrief(outcome) {
       hardcore: game.hardcore,
       date: new Date().toISOString(),
     });
-    p.history = p.history.slice(0, 30);
+    p.history = p.history.slice(0, 100);
     saveProgress(p);
     renderDebrief(d, gain, before, levelFor(p.xp));
     renderTopbar();
@@ -574,7 +675,12 @@ async function runDebrief(outcome) {
 }
 
 function renderDebrief(d, gain, before, after) {
-  $('dOutcome').textContent = d.outcome === 'won' ? 'Vente conclue' : 'Vente perdue';
+  $('dOutcome').textContent = d.outcome === 'won' ? 'Vente conclue' : 'Pas de vente';
+  $('dOutcome').className = `outcome ${d.outcome}`;
+  const ring = $('dRing');
+  ring.style.stroke = d.global >= 70 ? 'var(--good)' : d.global >= 40 ? 'var(--warn)' : 'var(--bad)';
+  ring.style.strokeDashoffset = 327;
+  requestAnimationFrame(() => requestAnimationFrame(() => (ring.style.strokeDashoffset = 327 * (1 - d.global / 100))));
   $('dStars').innerHTML = starsHTML(d.stars);
   $('dVerdict').textContent = d.verdict || '';
   $('dSummary').textContent = d.summary || '';
